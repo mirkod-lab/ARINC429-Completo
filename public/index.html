@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101c2c">
+  <title>ARINC 429 Lab</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark">429</span><span>ARINC <b>LAB</b></span></a>
+    <div class="connection-label"><span class="status-dot"></span><span id="mode-label">Conectando...</span></div>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <div><p class="eyebrow">LABORATORIO EDUCATIVO · WORD GENERATOR</p><h1>Control de envíos</h1>
+        <p>Configura, inspecciona y ejecuta palabras; guardar no transmite.</p></div>
+      <div class="serial-box"><label for="serial-port">Puerto serial</label>
+        <div class="port-row"><select id="serial-port" aria-label="Puerto COM"></select><button class="button button-small" id="refresh-ports" type="button">Actualizar</button></div>
+      </div>
+    </section>
+    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+    <div class="notice"><strong>Importante:</strong> USB/serial transporta datos al Arduino, no es una interfaz eléctrica ARINC 429.
+      El firmware de ejemplo solo valida tramas y responde ACK; no acciona A/B ni confirma tensiones físicas.</div>
+    <section class="layout">
+      <aside class="panel form-panel">
+        <div class="panel-title"><span>01</span><div><p class="eyebrow">OPERACIÓN</p><h2 id="form-title">Crear envío</h2></div></div>
+        <form id="send-form">
+          <label for="instrument">Instrumento</label><select id="instrument" name="id_instrumento" required></select>
+          <div class="field-row"><div><label for="value">Valor solicitado</label><input id="value" name="valor" type="number" step="any" required></div>
+            <div><label for="unit">Unidad</label><input id="unit" readonly></div></div>
+          <p class="range" id="range-help"></p>
+          <div class="actions"><button class="button button-primary" id="save-button" type="submit">Crear envío</button>
+            <button class="button button-quiet" id="cancel-edit" type="button" hidden>Cancelar</button></div>
+        </form>
+        <div class="decoder"><p class="eyebrow">VISTA PREVIA</p><code id="preview-word">—</code><span id="preview-hex">Ingresa un valor válido</span></div>
+      </aside>
+      <section class="panel history-panel">
+        <div class="history-head"><div class="panel-title"><span>02</span><div><p class="eyebrow">REGISTRO PERSISTENTE</p><h2>Historial</h2></div></div>
+          <button class="button button-small" id="reload" type="button">Actualizar</button></div>
+        <div class="filters">
+          <label>Instrumento<select id="filter-instrument"><option value="">Todos</option></select></label>
+          <label>Desde<input id="filter-from" type="date"></label><label>Hasta<input id="filter-to" type="date"></label>
+          <label>Estado<select id="filter-status"><option value="">Todos</option><option>pendiente</option><option>procesado</option><option>enviado</option><option>error</option></select></label>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>ID / FECHA</th><th>INSTRUMENTO / VALOR</th><th>PALABRA ARINC</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+          <tbody id="history-body"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody></table></div>
+        <p class="footnote">«Enviado» indica ACK de recepción serial del Arduino, no verificación de la salida física.</p>
+      </section>
+    </section>
+  </main>
+  <dialog id="detail-dialog"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><div id="detail-content"></div></dialog>
+</body>
+</html>

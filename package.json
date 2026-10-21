@@ -1,0 +1,21 @@
+{
+  "name": "arinc429-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Panel educativo configurable de generación de palabras ARINC 429 y puente serial para Arduino",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0",
+    "serialport": "^12.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
