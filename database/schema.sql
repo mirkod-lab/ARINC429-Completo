@@ -37,23 +37,53 @@ CREATE TABLE IF NOT EXISTS envios (
 ) ENGINE=InnoDB;
 
 -- Perfiles para laboratorio, no son especificaciones aeronáuticas.
--- Etiquetas 0x00/0x01, escalas y posiciones son datos ficticios editables.
-INSERT INTO instrumentos
-  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
-   parametros_arinc, parametros_tension)
-SELECT 'Indicador de temperatura de aceite (DEMO FICTICIA)', 0, 'BNR', '°C',
-       -50, 150, 1,
-       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
-                   'encoding', 'twos-complement', 'labelBitOrder', 'reverse'),
-       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
-WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de temperatura de aceite (DEMO FICTICIA)');
+-- Etiquetas 0x00/0x01/0x02, escalas y posiciones son datos ficticios editables.
+-- Normaliza nombres de instalaciones que ejecutaron la versión anterior del script.
+UPDATE instrumentos
+SET nombre = REPLACE(nombre, ' (DEMO FICTICIA)', '')
+WHERE nombre IN (
+  'Indicador de temperatura de aceite (DEMO FICTICIA)',
+  'Indicador de presión de combustible (DEMO FICTICIA)'
+);
+
+UPDATE instrumentos
+SET parametros_arinc = JSON_SET(parametros_arinc, '$.perfil',
+    'FICTICIO: reemplazar con documentación real del instrumento')
+WHERE nombre IN (
+  'Indicador de temperatura de aceite',
+  'Indicador de presión de combustible',
+  'Altímetro'
+);
 
 INSERT INTO instrumentos
   (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
    parametros_arinc, parametros_tension)
-SELECT 'Indicador de presión de combustible (DEMO FICTICIA)', 1, 'BCD', 'psi',
+SELECT 'Indicador de temperatura de aceite', 0, 'BNR', '°C',
+       -50, 150, 1,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
+                   'encoding', 'twos-complement', 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de temperatura de aceite');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Indicador de presión de combustible', 1, 'BCD', 'psi',
        0, 999, 1,
        JSON_OBJECT('sdi', 0, 'ssm', 0, 'bcdStartBit', 11, 'digitCount', 3,
-                   'digitBitPositions', JSON_ARRAY(11, 15, 19), 'labelBitOrder', 'reverse'),
+                   'digitBitPositions', JSON_ARRAY(11, 15, 19), 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
        JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
-WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de presión de combustible (DEMO FICTICIA)');
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de presión de combustible');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Altímetro', 2, 'BNR', 'ft',
+       -1000, 50000, 100,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
+                   'encoding', 'twos-complement', 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Altímetro');

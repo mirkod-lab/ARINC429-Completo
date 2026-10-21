@@ -10,7 +10,7 @@ Antes de completar firmware y cableado hacen falta: modelo exacto de Arduino; ve
 
 1. Instala Node.js 20 o superior, MySQL Server 8 y Visual Studio Code. Abre esta carpeta en VS Code.
 2. En la terminal PowerShell integrada ejecuta `npm install`.
-3. En MySQL Workbench, conecta con una cuenta administradora y abre/ejecuta `database/schema.sql`. El script crea `arinc429_lab` y los dos perfiles ficticios. Para limitar las credenciales de la aplicación, crea luego un usuario local propio:
+3. En MySQL Workbench, conecta con una cuenta administradora y abre/ejecuta `database/schema.sql`. El script crea `arinc429_lab` y tres perfiles de práctica (temperatura de aceite, presión de combustible y altímetro), con parámetros claramente marcados como ficticios. Si ya ejecutaste una versión anterior, vuelve a ejecutar este mismo script: actualizará los nombres de los dos instrumentos existentes y agregará el altímetro sin duplicar perfiles. Para limitar las credenciales de la aplicación, crea luego un usuario local propio:
 
    ```sql
    CREATE USER 'arinc_app'@'localhost' IDENTIFIED BY 'REEMPLAZAR_POR_UNA_CLAVE_SEGURA';
@@ -32,7 +32,7 @@ La etiqueta BNR/BCD debe ser un múltiplo de la resolución; la interfaz previsu
 
 Cada perfil define `parametros_arinc` en JSON. El generador asigna etiqueta (bits 1-8, reversión configurable), SDI (9-10), datos (11-29), SSM (30-31) y paridad impar (32). BNR admite `twos-complement` o `unsigned`; el primero es una convención del ejercicio configurable, no una declaración universal sobre una instalación certificada. BCD utiliza posiciones de nibble configurables. Se entrega `palabra_binaria` en orden de posición 32 a 1, hexadecimal numérico y cuatro bytes little-endian para la trama del PC; la capa posterior debe validar el orden de transmisión esperado por el hardware.
 
-Los perfiles precargados usan rangos, etiquetas y escalas inventados para ensayar software. No son etiquetas ARINC oficiales ni datos aprobados para instrumentos reales. Ajusta escalas, SDI, SSM, ubicación de bits y codificación con documentación técnica auténtica antes de cualquier integración.
+Los perfiles precargados usan rangos, etiquetas y escalas inventados para ensayar software. Los nombres se muestran sin la etiqueta «DEMO FICTICIA», pero eso no convierte sus parámetros en datos reales: la interfaz y esta documentación avisan que son perfiles de práctica. No son etiquetas ARINC oficiales ni datos aprobados para instrumentos reales. Ajusta escalas, SDI, SSM, ubicación de bits y codificación con documentación técnica auténtica antes de cualquier integración.
 
 ## Protocolo PC–Arduino
 

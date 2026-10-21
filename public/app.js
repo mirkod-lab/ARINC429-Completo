@@ -36,7 +36,7 @@ function updatePreview() {
   $('#value').max = instrument?.valor_maximo ?? '';
   $('#value').step = instrument?.resolucion ?? 'any';
   $('#range-help').textContent = instrument
-    ? `Rango ${instrument.valor_minimo}–${instrument.valor_maximo} ${instrument.unidad} · resolución ${instrument.resolucion} · etiqueta demo/configurada ${instrument.etiqueta_arinc}`
+    ? `Rango ${instrument.valor_minimo}–${instrument.valor_maximo} ${instrument.unidad} · resolución ${instrument.resolucion} · perfil de práctica`
     : '';
   if (!instrument || !Number.isFinite(value) || $('#value').value === '') {
     $('#preview-word').textContent = '—';
