@@ -10,7 +10,7 @@ Antes de completar firmware y cableado hacen falta: modelo exacto de Arduino; ve
 
 1. Instala Node.js 20 o superior, MySQL Server 8 y Visual Studio Code. Abre esta carpeta en VS Code.
 2. En la terminal PowerShell integrada ejecuta `npm install`.
-3. En MySQL Workbench, conecta con una cuenta administradora y abre/ejecuta `database/schema.sql`. El script crea `arinc429_lab` y tres perfiles de práctica (temperatura de aceite, presión de combustible y altímetro), con parámetros claramente marcados como ficticios. Si ya ejecutaste una versión anterior, vuelve a ejecutar este mismo script: actualizará los nombres de los dos instrumentos existentes y agregará el altímetro sin duplicar perfiles. Para limitar las credenciales de la aplicación, crea luego un usuario local propio:
+3. En MySQL Workbench, conecta con una cuenta administradora y abre/ejecuta `database/schema.sql`. El script crea `arinc429_lab` y nueve perfiles de práctica: temperatura de aceite, presión de combustible, altímetro, velocidad aerodinámica, velocidad vertical, rumbo, actitud, temperatura exterior y tacómetro de motor. Todos usan parámetros ficticios. Si ya ejecutaste una versión anterior, vuelve a ejecutar el mismo script para agregar los perfiles faltantes sin duplicarlos; después actualiza el panel para que aparezcan en el CRUD. Para limitar las credenciales de la aplicación, crea luego un usuario local propio:
 
    ```sql
    CREATE USER 'arinc_app'@'localhost' IDENTIFIED BY 'REEMPLAZAR_POR_UNA_CLAVE_SEGURA';

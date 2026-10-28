@@ -87,3 +87,69 @@ SELECT 'Altímetro', 2, 'BNR', 'ft',
                    'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
        JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
 WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Altímetro');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Indicador de velocidad aerodinámica', 3, 'BNR', 'kts',
+       0, 500, 1,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
+                   'encoding', 'unsigned', 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de velocidad aerodinámica');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Indicador de velocidad vertical', 4, 'BNR', 'ft/min',
+       -6000, 6000, 100,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
+                   'encoding', 'twos-complement', 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de velocidad vertical');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Indicador de rumbo', 5, 'BCD', '°',
+       0, 359, 1,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'bcdStartBit', 11, 'digitCount', 3,
+                   'digitBitPositions', JSON_ARRAY(11, 15, 19), 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de rumbo');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Indicador de actitud', 6, 'BNR', '°',
+       -90, 90, 1,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
+                   'encoding', 'twos-complement', 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de actitud');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Temperatura exterior', 7, 'BNR', '°C',
+       -80, 60, 1,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
+                   'encoding', 'twos-complement', 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Temperatura exterior');
+
+INSERT INTO instrumentos
+  (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,
+   parametros_arinc, parametros_tension)
+SELECT 'Tacómetro de motor', 8, 'BNR', 'rpm',
+       0, 5000, 10,
+       JSON_OBJECT('sdi', 0, 'ssm', 0, 'dataStartBit', 11, 'dataBitLength', 19,
+                   'encoding', 'unsigned', 'labelBitOrder', 'reverse',
+                   'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
+       JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
+WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Tacómetro de motor');
