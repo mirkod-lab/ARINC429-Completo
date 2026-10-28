@@ -75,7 +75,10 @@ SELECT 'Indicador de presión de combustible', 1, 'BCD', 'psi',
                    'digitBitPositions', JSON_ARRAY(11, 15, 19), 'labelBitOrder', 'reverse',
                    'perfil', 'FICTICIO: reemplazar con documentación real del instrumento'),
        JSON_OBJECT('status', 'FICTICIO: completar según esquema eléctrico del circuito A/B')
-WHERE NOT EXISTS (SELECT 1 FROM instrumentos WHERE nombre = 'Indicador de presión de combustible');
+WHERE NOT EXISTS (
+  SELECT 1 FROM instrumentos
+  WHERE nombre LIKE 'Indicador de presi_n de combustible%'
+);
 
 INSERT INTO instrumentos
   (nombre, etiqueta_arinc, formato_datos, unidad, valor_minimo, valor_maximo, resolucion,

@@ -18,6 +18,8 @@ Antes de completar firmware y cableado hacen falta: modelo exacto de Arduino; ve
    ```
 
    Cambia el nombre/host si tu instancia lo requiere. No guardes esa clave en el repositorio ni la envíes al frontend.
+
+Para abrir y consultar la base, puedes usar **MySQL Workbench**: conéctate al servidor MySQL local, abre **Schemas → arinc429_lab → Tables**, y luego **clic derecho en `instrumentos` → Select Rows - Limit 1000**. También puedes abrir `database/schema.sql` en Workbench y ejecutar las consultas del archivo. La aplicación se conecta usando las variables `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME` del `.env`; no compartas ni publiques ese archivo.
 4. Copia `.env.example` como `.env` (en VS Code: **Guardar como**) y completa `DB_HOST`, `DB_USER`, `DB_PASSWORD` y `DB_NAME`. No cambies `SERIAL_MODE=simulation` todavía.
 5. En la terminal de VS Code ejecuta `npm start` y abre `http://localhost:3000`. Detén el servidor con Ctrl+C.
 6. Ejecuta `npm test` para probar longitud, resolución, límites, BNR, BCD, paridad impar, trama serial, CRC y ACK.
