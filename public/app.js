@@ -27,6 +27,20 @@ function selectedInstrument() {
   return instruments.find((item) => Number(item.id_instrumento) === Number(instrumentSelect.value));
 }
 
+function renderVoltageLevels(container, levels) {
+  container.replaceChildren();
+  for (const level of levels || []) {
+    const cell = document.createElement('div');
+    cell.className = `voltage-cell ${level.bit ? 'voltage-cell-high' : ''}`;
+    const bit = document.createElement('small');
+    bit.textContent = `B${level.bitPosition}`;
+    const voltage = document.createElement('strong');
+    voltage.textContent = `${level.voltage > 0 ? '+' : ''}${level.voltage} V`;
+    cell.append(bit, voltage);
+    container.append(cell);
+  }
+}
+
 function updatePreview() {
   const requestId = ++previewRequest;
   const instrument = selectedInstrument();
@@ -41,21 +55,24 @@ function updatePreview() {
   if (!instrument || !Number.isFinite(value) || $('#value').value === '') {
     $('#preview-word').textContent = '—';
     $('#preview-hex').textContent = 'Ingresa un valor válido';
+    $('#preview-voltages').replaceChildren();
     return;
   }
   $('#preview-word').textContent = 'Calculando palabra...';
   $('#preview-hex').textContent = '';
   api('/api/envios/preview', {
     method: 'POST',
-    body: JSON.stringify({ id_instrumento: instrument.id_instrumento, valor })
+    body: JSON.stringify({ id_instrumento: instrument.id_instrumento, valor: value })
   }).then((result) => {
     if (requestId !== previewRequest) return;
     $('#preview-word').textContent = result.binary;
     $('#preview-hex').textContent = result.hexadecimal;
+    renderVoltageLevels($('#preview-voltages'), result.simulatedVoltages);
   }).catch((error) => {
     if (requestId !== previewRequest) return;
     $('#preview-word').textContent = 'No se pudo codificar';
     $('#preview-hex').textContent = error.message;
+    $('#preview-voltages').replaceChildren();
   });
 }
 
@@ -235,6 +252,17 @@ historyBody.addEventListener('click', async (event) => {
         grid.append(box);
       }
       content.append(grid);
+      const voltageTitle = document.createElement('p');
+      voltageTitle.className = 'eyebrow';
+      voltageTitle.textContent = 'TENSIÓN SIMULADA POR BIT · 1 = +12 V / 0 = −12 V';
+      voltageTitle.style.margin = '18px 0 8px';
+      const voltageNote = document.createElement('p');
+      voltageNote.className = 'simulation-note';
+      voltageNote.textContent = 'Modelo didáctico; no representa una salida física ni la forma de onda ARINC 429.';
+      const voltages = document.createElement('div');
+      voltages.className = 'voltage-grid';
+      renderVoltageLevels(voltages, item.simulatedVoltages);
+      content.append(voltageTitle, voltageNote, voltages);
       $('#detail-dialog').showModal();
     } else if (button.dataset.action === 'edit') {
       const item = await api(`/api/envios/${id}`);
@@ -247,12 +275,36 @@ historyBody.addEventListener('click', async (event) => {
       updatePreview();
       $('#value').focus();
     } else if (button.dataset.action === 'run') {
-      if (!window.confirm('¿Ejecutar este envío? La simulación no transmite; el modo hardware requiere ACK del Arduino.')) return;
+      const simulationMode = $('#mode-label').textContent === 'Modo simulación';
+      const confirmation = simulationMode
+        ? '¿Ejecutar la simulación? Solo se mostrarán los niveles didácticos 1 → +12 V y 0 → −12 V; no se transmite ni se genera tensión física.'
+        : '¿Enviar este envío por serial? El ACK confirma recepción del Arduino, no la salida física ARINC.';
+      if (!window.confirm(confirmation)) return;
       const result = await api(`/api/envios/${id}/ejecutar`, {
         method: 'POST',
         body: JSON.stringify({ port: $('#serial-port').value })
       });
       showMessage(result.message);
+      if (result.simulatedVoltages) {
+        const content = $('#detail-content');
+        content.replaceChildren();
+        const heading = document.createElement('h2');
+        heading.textContent = `Simulación del envío #${id}`;
+        const binary = document.createElement('code');
+        binary.className = 'word-main';
+        binary.textContent = result.palabra_binaria;
+        const hex = document.createElement('p');
+        hex.className = 'hex';
+        hex.textContent = `0x${result.palabra_hexadecimal}`;
+        const note = document.createElement('p');
+        note.className = 'simulation-note';
+        note.textContent = 'Mapeo didáctico: 1 → +12 V y 0 → −12 V. No hubo transmisión física; esto no modela la forma de onda ARINC 429.';
+        const voltages = document.createElement('div');
+        voltages.className = 'voltage-grid';
+        renderVoltageLevels(voltages, result.simulatedVoltages);
+        content.append(heading, binary, hex, note, voltages);
+        $('#detail-dialog').showModal();
+      }
       await loadHistory();
     } else if (button.dataset.action === 'delete') {
       if (!window.confirm(`¿Eliminar el envío #${id}?`)) return;

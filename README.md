@@ -26,7 +26,9 @@ Para abrir y consultar la base, puedes usar **MySQL Workbench**: conéctate al s
 
 ## Uso
 
-Selecciona el instrumento de demostración, introduce un valor dentro del rango y pulsa **Crear envío**. La acción solo guarda el envío pendiente en MySQL. Revisa la palabra/hexadecimal y pulsa **Ejecutar** para simular: quedará como `procesado`, con detalle indicando que no hubo transmisión real. Se puede consultar, editar, filtrar o eliminar desde el historial.
+Selecciona el instrumento de demostración, introduce un valor dentro del rango y pulsa **Crear envío**. La acción solo guarda el envío pendiente en MySQL. La vista previa muestra la palabra/hexadecimal y un mapeo lógico didáctico por bit (`1 → +12 V`, `0 → −12 V`). Pulsa **Ejecutar** para simular: quedará como `procesado` y mostrará la palabra y esos niveles simulados. No se envía por serial ni se genera tensión física.
+
+El mapeo ±12 V es solo una representación conceptual para la práctica; no modela la temporización, el retorno a cero ni la señal diferencial física ARINC 429. No conectes una salida de ±12 V al Arduino ni uses esta vista como diseño o validación eléctrica.
 
 La etiqueta BNR/BCD debe ser un múltiplo de la resolución; la interfaz previsualiza los 32 bits y el hexadecimal, y el backend vuelve a validar el valor. La paridad es impar si el conteo total de bits en `1`, incluido el bit 32, es impar. Los tests comprueban esta condición automáticamente.
 

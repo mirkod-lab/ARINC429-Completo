@@ -36,7 +36,16 @@
           <div class="actions"><button class="button button-primary" id="save-button" type="submit">Crear envío</button>
             <button class="button button-quiet" id="cancel-edit" type="button" hidden>Cancelar</button></div>
         </form>
-        <div class="decoder"><p class="eyebrow">VISTA PREVIA</p><code id="preview-word">—</code><span id="preview-hex">Ingresa un valor válido</span></div>
+        <div class="decoder">
+          <p class="eyebrow">PALABRA DE 32 BITS</p>
+          <code id="preview-word">—</code>
+          <span id="preview-hex">Ingresa un valor válido</span>
+          <div class="voltage-preview">
+            <p class="eyebrow">TENSIÓN SIMULADA POR BIT</p>
+            <p class="simulation-note">Modelo didáctico: 1 → +12 V · 0 → −12 V. No representa una salida física ni la forma de onda ARINC 429.</p>
+            <div class="voltage-grid" id="preview-voltages" aria-label="Niveles de tensión simulados para los 32 bits"></div>
+          </div>
+        </div>
       </aside>
       <section class="panel history-panel">
         <div class="history-head"><div class="panel-title"><span>02</span><div><p class="eyebrow">REGISTRO PERSISTENTE</p><h2>Historial</h2></div></div>

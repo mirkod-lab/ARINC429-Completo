@@ -1,5 +1,5 @@
 const express = require('express');
-const { generateWord } = require('../services/arinc429');
+const { generateWord, simulateVoltageLevels } = require('../services/arinc429');
 
 function validId(value) {
   const id = Number(value);
@@ -54,7 +54,7 @@ function createEnviosRouter(pool, serial) {
   router.post('/preview', async (req, res, next) => {
     try {
       const { valor, encoded } = await prepare(req.body);
-      res.json({ valor, ...encoded });
+      res.json({ valor, ...encoded, simulatedVoltages: simulateVoltageLevels(encoded.binary) });
     } catch (error) {
       next(error);
     }
@@ -92,7 +92,10 @@ function createEnviosRouter(pool, serial) {
          ${where} ORDER BY e.fecha_hora DESC, e.id_envio DESC LIMIT 500`,
         values
       );
-      res.json(rows);
+      res.json(rows.map((row) => ({
+        ...row,
+        simulatedVoltages: simulateVoltageLevels(row.palabra_binaria)
+      })));
     } catch (error) {
       next(error);
     }
@@ -109,7 +112,10 @@ function createEnviosRouter(pool, serial) {
         [id]
       );
       if (!rows.length) return res.status(404).json({ error: 'No se encontró el envío.' });
-      res.json(rows[0]);
+      res.json({
+        ...rows[0],
+        simulatedVoltages: simulateVoltageLevels(rows[0].palabra_binaria)
+      });
     } catch (error) {
       next(error);
     }
@@ -129,6 +135,7 @@ function createEnviosRouter(pool, serial) {
         valor,
         ...encoded,
         estado: 'pendiente',
+        simulatedVoltages: simulateVoltageLevels(encoded.binary),
         message: 'Envío guardado; aún no se ha transmitido.'
       });
     } catch (error) {
@@ -151,7 +158,13 @@ function createEnviosRouter(pool, serial) {
          palabra_hexadecimal = ?, estado = 'pendiente', detalle_error = NULL WHERE id_envio = ?`,
         [idInstrumento, valor, encoded.binary, encoded.hexadecimal.slice(2), id]
       );
-      res.json({ id_envio: id, valor, ...encoded, estado: 'pendiente' });
+      res.json({
+        id_envio: id,
+        valor,
+        ...encoded,
+        estado: 'pendiente',
+        simulatedVoltages: simulateVoltageLevels(encoded.binary)
+      });
     } catch (error) {
       next(error);
     }
@@ -190,8 +203,11 @@ function createEnviosRouter(pool, serial) {
           return res.json({
             id_envio: id,
             estado: 'procesado',
+            palabra_binaria: envio.palabra_binaria,
+            palabra_hexadecimal: envio.palabra_hexadecimal,
+            simulatedVoltages: simulateVoltageLevels(envio.palabra_binaria),
             outcome,
-            message: 'Simulación completada. No hubo transmisión serial ni física.'
+            message: 'Simulación completada: se muestra el mapeo didáctico 1 → +12 V y 0 → −12 V. No hubo transmisión serial ni física.'
           });
         }
         await pool.execute(

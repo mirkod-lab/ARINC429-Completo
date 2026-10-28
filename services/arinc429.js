@@ -133,4 +133,15 @@ function generateWord(instrument, value) {
   };
 }
 
-module.exports = { generateWord };
+function simulateVoltageLevels(binary) {
+  if (typeof binary !== 'string' || !/^[01]{32}$/.test(binary)) {
+    throw new Error('La simulación de tensión requiere una palabra binaria de 32 bits.');
+  }
+  return [...binary].map((bit, index) => ({
+    bitPosition: WORD_BITS - index,
+    bit: Number(bit),
+    voltage: bit === '1' ? 12 : -12
+  }));
+}
+
+module.exports = { generateWord, simulateVoltageLevels };

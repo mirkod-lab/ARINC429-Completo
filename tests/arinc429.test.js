@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { generateWord } = require('../services/arinc429');
+const { generateWord, simulateVoltageLevels } = require('../services/arinc429');
 const { makeFrame, crc16, parseAck } = require('../services/serial');
 
 const bnr = {
@@ -55,6 +55,15 @@ test('codifica dígitos BCD configurables y rechaza exceso de dígitos', () => {
   assert.equal(generateWord(bcd, 507).binary.length, 32);
   assert.equal(generateWord(bcd, 507).oddParity, true);
   assert.throws(() => generateWord(bcd, 1000), /entre 0 y 999/);
+});
+
+test('simula los 32 bits con mapeo didáctico 1 a +12 V y 0 a -12 V', () => {
+  const levels = simulateVoltageLevels('1'.padEnd(32, '0'));
+  assert.equal(levels.length, 32);
+  assert.deepEqual(levels[0], { bitPosition: 32, bit: 1, voltage: 12 });
+  assert.deepEqual(levels[1], { bitPosition: 31, bit: 0, voltage: -12 });
+  assert.deepEqual(levels.at(-1), { bitPosition: 1, bit: 0, voltage: -12 });
+  assert.throws(() => simulateVoltageLevels('101'), /32 bits/);
 });
 
 test('crea una trama serial de 11 bytes con palabra little-endian y CRC correcto', () => {
