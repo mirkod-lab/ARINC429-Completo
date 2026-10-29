@@ -60,6 +60,40 @@
         <p class="footnote">«Enviado» indica ACK de recepción serial del Arduino, no verificación de la salida física.</p>
       </section>
     </section>
+    <section class="panel instrument-panel" aria-labelledby="instrument-admin-title">
+      <div class="history-head">
+        <div class="panel-title"><span>03</span><div><p class="eyebrow">CATÁLOGO</p><h2 id="instrument-admin-title">Administrar instrumentos</h2></div></div>
+        <button class="button button-small" id="reload-instruments" type="button">Actualizar</button>
+      </div>
+      <div class="instrument-admin-layout">
+        <form id="instrument-form">
+          <h3 id="instrument-form-title">Nuevo instrumento</h3>
+          <label for="instrument-name">Descripción</label>
+          <input id="instrument-name" name="nombre" maxlength="120" required>
+          <div class="instrument-fields">
+            <div><label for="instrument-label">Etiqueta ARINC (0–255)</label><input id="instrument-label" name="etiqueta_arinc" type="number" min="0" max="255" step="1" required></div>
+            <div><label for="instrument-format">Formato</label><select id="instrument-format" name="formato_datos" required><option value="BNR">BNR</option><option value="BCD">BCD</option></select></div>
+            <div><label for="instrument-unit">Unidad</label><input id="instrument-unit" name="unidad" maxlength="24" required></div>
+            <div><label for="instrument-resolution">Resolución</label><input id="instrument-resolution" name="resolucion" type="number" min="0.00000001" step="any" required></div>
+            <div><label for="instrument-min">Valor mínimo</label><input id="instrument-min" name="valor_minimo" type="number" step="any" required></div>
+            <div><label for="instrument-max">Valor máximo</label><input id="instrument-max" name="valor_maximo" type="number" step="any" required></div>
+          </div>
+          <label for="instrument-arinc-params">Parámetros ARINC (JSON)</label>
+          <textarea id="instrument-arinc-params" name="parametros_arinc" rows="5" required></textarea>
+          <label for="instrument-voltage-params">Parámetros de tensión (JSON)</label>
+          <textarea id="instrument-voltage-params" name="parametros_tension" rows="3" required></textarea>
+          <div class="actions">
+            <button class="button button-primary" id="instrument-save" type="submit">Crear instrumento</button>
+            <button class="button button-quiet" id="instrument-cancel" type="button" hidden>Cancelar</button>
+          </div>
+        </form>
+        <div class="table-scroll">
+          <table><thead><tr><th>ID</th><th>DESCRIPCIÓN</th><th>RANGO / FORMATO</th><th>ACCIONES</th></tr></thead>
+            <tbody id="instrument-body"><tr><td colspan="4" class="empty">Cargando instrumentos...</td></tr></tbody></table>
+        </div>
+      </div>
+      <p class="footnote">La etiqueta y los parámetros ARINC deben corresponder al perfil que quieras codificar. La clave primaria se asigna automáticamente; no se pueden eliminar instrumentos con envíos asociados.</p>
+    </section>
   </main>
   <dialog id="detail-dialog"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><div id="detail-content"></div></dialog>
 </body>

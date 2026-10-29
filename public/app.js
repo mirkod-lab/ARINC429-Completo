@@ -77,22 +77,89 @@ function updatePreview() {
 }
 
 async function loadInstruments() {
+  const selectedId = instrumentSelect.value;
   instruments = await api('/api/instrumentos');
   const options = instruments.map((item) => {
     const option = document.createElement('option');
     option.value = item.id_instrumento;
-    option.textContent = item.nombre;
+    option.textContent = `${item.nombre} · ${item.unidad}`;
     return option;
   });
+  if (!options.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No hay instrumentos disponibles';
+    option.disabled = true;
+    options.push(option);
+  }
   instrumentSelect.replaceChildren(...options);
+  if (instruments.some((item) => String(item.id_instrumento) === selectedId)) {
+    instrumentSelect.value = selectedId;
+  }
+  const selectedFilterId = $('#filter-instrument').value;
+  const allOption = $('#filter-instrument').options[0];
   const filterOptions = instruments.map((item) => {
     const option = document.createElement('option');
     option.value = item.id_instrumento;
     option.textContent = item.nombre;
     return option;
   });
-  $('#filter-instrument').append(...filterOptions);
+  $('#filter-instrument').replaceChildren(allOption, ...filterOptions);
+  if (instruments.some((item) => String(item.id_instrumento) === selectedFilterId)) {
+    $('#filter-instrument').value = selectedFilterId;
+  }
+  await loadInstrumentAdmin();
   updatePreview();
+}
+
+function renderInstrumentAdmin() {
+  const body = $('#instrument-body');
+  body.replaceChildren();
+  if (!instruments.length) {
+    const row = document.createElement('tr');
+    const cell = makeCell('No hay instrumentos cargados.', 'empty');
+    cell.colSpan = 4;
+    row.append(cell);
+    body.append(row);
+    return;
+  }
+  for (const item of instruments) {
+    const row = document.createElement('tr');
+    row.append(makeCell(`#${item.id_instrumento}`));
+    row.append(makeCell(item.nombre));
+    row.append(makeCell(`${item.valor_minimo}–${item.valor_maximo} ${item.unidad} · ${item.formato_datos}`));
+    const actions = document.createElement('div');
+    actions.className = 'row-actions';
+    actions.append(
+      makeButton('Editar', 'edit-instrument', item.id_instrumento),
+      makeButton('Eliminar', 'delete-instrument', item.id_instrumento, false, 'delete')
+    );
+    row.append(makeCell(actions));
+    body.append(row);
+  }
+}
+
+async function loadInstrumentAdmin() {
+  renderInstrumentAdmin();
+}
+
+function resetInstrumentForm() {
+  $('#instrument-form').reset();
+  $('#instrument-arinc-params').value = JSON.stringify({
+    sdi: 0, ssm: 0, dataStartBit: 11, dataBitLength: 19,
+    encoding: 'twos-complement', labelBitOrder: 'reverse'
+  }, null, 2);
+  $('#instrument-voltage-params').value = JSON.stringify({
+    status: 'Perfil de práctica; no controla salidas eléctricas.'
+  }, null, 2);
+  $('#instrument-form-title').textContent = 'Nuevo instrumento';
+  $('#instrument-save').textContent = 'Crear instrumento';
+  $('#instrument-cancel').hidden = true;
+}
+
+async function refreshInstrumentData() {
+  await loadInstruments();
+  await loadHistory();
 }
 
 function makeCell(content, className = '') {
@@ -216,6 +283,65 @@ $('#cancel-edit').addEventListener('click', resetForm);
 instrumentSelect.addEventListener('change', updatePreview);
 $('#value').addEventListener('input', updatePreview);
 $('#reload').addEventListener('click', loadHistory);
+$('#reload-instruments').addEventListener('click', () => refreshInstrumentData().catch((error) => showMessage(error.message, 'error')));
+$('#instrument-cancel').addEventListener('click', resetInstrumentForm);
+$('#instrument-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const instrumentForm = $('#instrument-form');
+  const payload = Object.fromEntries(new FormData(instrumentForm).entries());
+  const editingInstrumentId = instrumentForm.dataset.editingId;
+  try {
+    const result = await api(editingInstrumentId
+      ? `/api/instrumentos/${editingInstrumentId}`
+      : '/api/instrumentos', {
+      method: editingInstrumentId ? 'PUT' : 'POST',
+      body: JSON.stringify(payload)
+    });
+    showMessage(editingInstrumentId
+      ? `Instrumento #${result.id_instrumento} actualizado.`
+      : `Instrumento #${result.id_instrumento} creado.`);
+    resetInstrumentForm();
+    await refreshInstrumentData();
+  } catch (error) {
+    showMessage(error.message, 'error');
+  }
+});
+$('#instrument-body').addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const id = button.dataset.id;
+  try {
+    if (button.dataset.action === 'edit-instrument') {
+      const item = await api(`/api/instrumentos/${id}`);
+      const instrumentForm = $('#instrument-form');
+      instrumentForm.dataset.editingId = id;
+      $('#instrument-name').value = item.nombre;
+      $('#instrument-label').value = item.etiqueta_arinc;
+      $('#instrument-format').value = item.formato_datos;
+      $('#instrument-unit').value = item.unidad;
+      $('#instrument-resolution').value = item.resolucion;
+      $('#instrument-min').value = item.valor_minimo;
+      $('#instrument-max').value = item.valor_maximo;
+      $('#instrument-arinc-params').value = JSON.stringify(item.parametros_arinc, null, 2);
+      $('#instrument-voltage-params').value = JSON.stringify(item.parametros_tension, null, 2);
+      $('#instrument-form-title').textContent = `Editar instrumento #${id}`;
+      $('#instrument-save').textContent = 'Guardar cambios';
+      $('#instrument-cancel').hidden = false;
+      $('#instrument-name').focus();
+    } else if (button.dataset.action === 'delete-instrument') {
+      if (!window.confirm(`¿Eliminar el instrumento #${id}? Los instrumentos con envíos asociados no se pueden eliminar.`)) return;
+      await api(`/api/instrumentos/${id}`, { method: 'DELETE' });
+      showMessage(`Instrumento #${id} eliminado.`);
+      await refreshInstrumentData();
+    }
+  } catch (error) {
+    showMessage(error.message, 'error');
+  }
+});
+$('#instrument-form').addEventListener('reset', () => {
+  delete $('#instrument-form').dataset.editingId;
+});
+resetInstrumentForm();
 for (const selector of ['#filter-instrument', '#filter-from', '#filter-to', '#filter-status']) {
   $(selector).addEventListener('change', loadHistory);
 }

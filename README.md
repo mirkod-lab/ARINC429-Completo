@@ -26,7 +26,9 @@ Para abrir y consultar la base, puedes usar **MySQL Workbench**: conéctate al s
 
 ## Uso
 
-Selecciona el instrumento de demostración, introduce un valor dentro del rango y pulsa **Crear envío**. La acción solo guarda el envío pendiente en MySQL. La vista previa muestra la palabra/hexadecimal y un mapeo lógico didáctico por bit (`1 → +12 V`, `0 → −12 V`). Pulsa **Ejecutar** para simular: quedará como `procesado` y mostrará la palabra y esos niveles simulados. No se envía por serial ni se genera tensión física.
+Selecciona el instrumento de demostración en la lista, introduce un valor dentro del rango y pulsa **Crear envío**. La acción solo guarda el envío pendiente en MySQL. La vista previa muestra la palabra/hexadecimal y un mapeo lógico didáctico por bit (`1 → +12 V`, `0 → −12 V`). Pulsa **Ejecutar** para simular: quedará como `procesado` y mostrará la palabra y esos niveles simulados. No se envía por serial ni se genera tensión física.
+
+La sección **Administrar instrumentos** permite crear, consultar, modificar y eliminar perfiles. La descripción, etiqueta, formato, unidad, rango, resolución y objetos JSON de configuración se validan antes de guardar. El ID es autogenerado. No se permite eliminar un instrumento con envíos asociados; el control se aplica en la API y en la clave foránea MySQL.
 
 El mapeo ±12 V es solo una representación conceptual para la práctica; no modela la temporización, el retorno a cero ni la señal diferencial física ARINC 429. No conectes una salida de ±12 V al Arduino ni uses esta vista como diseño o validación eléctrica.
 
@@ -57,11 +59,15 @@ Para el modo real, cambia `SERIAL_MODE=hardware`, reinicia y selecciona COM. Cie
 
 ## API
 
-- `GET /api/instrumentos`
+- `GET /api/instrumentos`, `GET /api/instrumentos/:id`
+- `POST /api/instrumentos`, `PUT /api/instrumentos/:id`, `DELETE /api/instrumentos/:id`
+  - El cuerpo de creación/edición requiere `nombre` (descripción), `etiqueta_arinc`, `formato_datos` (`BNR` o `BCD`), `unidad`, `valor_minimo`, `valor_maximo`, `resolucion`, `parametros_arinc` y `parametros_tension`.
+  - `parametros_arinc` y `parametros_tension` son objetos JSON (también se aceptan como cadenas JSON). Los parámetros ARINC deben permitir codificar los extremos del rango con la resolución seleccionada.
+  - `DELETE` responde HTTP 409 cuando hay envíos asociados.
 - `POST /api/envios/preview` valida y codifica una vista previa sin guardar el envío
 - `GET /api/envios?estado=&id_instrumento=&desde=YYYY-MM-DD&hasta=YYYY-MM-DD`
 - `GET /api/envios/:id`, `POST /api/envios`, `PUT /api/envios/:id`, `DELETE /api/envios/:id`
 - `POST /api/envios/:id/ejecutar` con `{ "port": "COM3" }` en hardware
 - `GET /api/serial/puertos`, `GET /api/estado`
 
-Todas las consultas MySQL usan parámetros. `enviado` significa únicamente ACK serial del firmware; la aplicación no registra simulación como transmisión ni afirma confirmación eléctrica física.
+La tabla `envios` ya referencia `instrumentos` por `id_instrumento` mediante una clave foránea con `ON DELETE RESTRICT`; un instrumento puede tener varios envíos y cada envío pertenece a un instrumento. No hace falta una migración adicional en instalaciones que ya aplicaron `database/schema.sql`. Todas las consultas MySQL usan parámetros. `enviado` significa únicamente ACK serial del firmware; la aplicación no registra simulación como transmisión ni afirma confirmación eléctrica física.
