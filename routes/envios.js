@@ -193,7 +193,12 @@ function createEnviosRouter(pool, serial) {
         return res.status(409).json({ error: 'Este envío ya fue aceptado por Arduino.' });
       }
       try {
-        const outcome = await serial.sendWord(Number.parseInt(envio.palabra_hexadecimal, 16), req.body.port);
+        const selected = await instrument(envio.id_instrumento);
+        const outcome = await serial.sendWord(
+          Number.parseInt(envio.palabra_hexadecimal, 16),
+          req.body.port,
+          { instrument: selected.nombre, value: envio.valor, unit: selected.unidad }
+        );
         if (outcome.mode === 'simulation') {
           await pool.execute(
             `UPDATE envios SET estado = 'procesado',

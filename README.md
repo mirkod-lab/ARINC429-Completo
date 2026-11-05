@@ -42,7 +42,7 @@ Los perfiles precargados usan rangos, etiquetas y escalas inventados para ensaya
 
 ## Protocolo PC–Arduino
 
-Parámetros de ejemplo: 115200 baudios, 8 bits, sin paridad, 1 stop. Trama de 11 bytes: `02 | versión(01) | comando(01) | secuencia | palabra(4 bytes LE) | CRC16-Modbus(2 bytes LE) | 03`. ACK: `02 | versión(01) | comando(81) | secuencia | CRC16-Modbus(2 bytes LE) | 03` (7 bytes). El código base del Arduino valida el marco y responde ACK. El ACK solo prueba que el firmware recibió y validó la trama; no confirma generación de pulsos ni tensión A/B. Los campos CRC y encuadre evitan aceptar silenciosamente la mayoría de tramas alteradas; añade timeout, reintentos y recuperación según el firmware definitivo.
+Parámetros de ejemplo: 115200 baudios, 8 bits, sin paridad, 1 stop. La aplicación envía una trama fija de 70 bytes: `02 | versión(01) | comando(02) | secuencia | palabra(4 bytes LE) | longitud + instrumento(24 bytes ASCII) | longitud + unidad(12 bytes ASCII) | longitud + valor(20 bytes ASCII) | CRC16-Modbus(2 bytes LE) | 03`. Los campos de texto no usados se rellenan con cero; las longitudes indican los caracteres válidos. La trama antigua de palabra sola (11 bytes, comando `01`) se sigue aceptando por compatibilidad. ACK: `02 | versión(01) | comando(81) | secuencia | CRC16-Modbus(2 bytes LE) | 03` (7 bytes). El nombre/valor/unidad son metadatos de la aplicación, no una decodificación independiente del contenido ARINC. El ACK confirma la recepción de la trama, no la paridad ARINC ni generación de pulsos/tensión A/B.
 
 Para el modo real, cambia `SERIAL_MODE=hardware`, reinicia y selecciona COM. Cierra el monitor serial de Arduino IDE antes de ejecutar; el servidor abre el puerto en cada envío. Si el modelo no usa el firmware de ejemplo, adapta baudrate, trama, CRC y ACK en ambos extremos.
 
@@ -50,7 +50,7 @@ Para el modo real, cambia `SERIAL_MODE=hardware`, reinicia y selecciona COM. Cie
 
 1. Conecta la placa por USB y abre **Administrador de dispositivos → Puertos (COM y LPT)** para identificar el COM. También se puede revisar en Arduino IDE → **Herramientas → Puerto**. La lista del panel usa los puertos visibles para Node.
 2. No ejecutes el ejemplo como transmisor ARINC: es solo receptor de trama/validador con ACK, no conoce modelo de placa, no configura pines A/B y no genera señal física.
-3. Si solo se prueba el enlace de datos de la placa: abre `arduino/firmware.ino` en Arduino IDE, selecciona el modelo/puerto correctos, verifica y carga. Luego activa `SERIAL_MODE=hardware` en `.env`, reinicia el servidor y envía una palabra de prueba; un ACK cambia el estado a `enviado`, que solo acredita recepción serial.
+3. Para probar solo el enlace serial, `arduino/firmware.ino` valida tramas antiguas y extendidas y responde ACK, sin LCD ni salidas. Para mostrar instrumento/valor y observar los bits lógicos, usa el receptor del repositorio `ARINC429-CompletoArduino`. Activa `SERIAL_MODE=hardware`, reinicia el servidor y envía una palabra de prueba; un ACK cambia el estado a `enviado`, que solo acredita recepción serial.
 4. Para integrar salida A/B se debe completar el firmware después de recibir las especificaciones eléctricas y lógicas faltantes. Valida primero con osciloscopio apropiado, carga de prueba y circuito aislado. No uses solo un multímetro para certificar forma de onda/temporización, no conectes el instrumento mientras no se hayan validado amplitud, polaridad, secuencia y protecciones, y nunca conectes ±10 V a un pin Arduino.
 
 ## Arduino y seguridad eléctrica

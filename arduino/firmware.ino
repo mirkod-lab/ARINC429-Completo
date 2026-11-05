@@ -10,10 +10,14 @@ static const uint8_t FRAME_START = 0x02;
 static const uint8_t FRAME_END = 0x03;
 static const uint8_t VERSION = 1;
 static const uint8_t COMMAND_WORD = 0x01;
+static const uint8_t COMMAND_WORD_METADATA = 0x02;
 static const uint8_t ACK_COMMAND = 0x81;
-static const size_t FRAME_SIZE = 11;
-static uint8_t frame[FRAME_SIZE];
+static const size_t LEGACY_FRAME_SIZE = 11;
+static const size_t METADATA_FRAME_SIZE = 70;
+static const size_t MAX_FRAME_SIZE = METADATA_FRAME_SIZE;
+static uint8_t frame[MAX_FRAME_SIZE];
 static size_t used = 0;
+static size_t expectedSize = 0;
 
 uint16_t crc16(const uint8_t *data, size_t length) {
   uint16_t crc = 0xffff;
@@ -35,11 +39,32 @@ void sendAck(uint8_t sequence) {
   Serial.write(ack, sizeof(ack));
 }
 
+bool validateFrame() {
+  if (frame[0] != FRAME_START || frame[1] != VERSION) return false;
+  size_t crcOffset;
+  size_t crcLength;
+
+  if (frame[2] == COMMAND_WORD && expectedSize == LEGACY_FRAME_SIZE) {
+    if (frame[10] != FRAME_END) return false;
+    crcOffset = 8;
+    crcLength = 7;
+  } else if (frame[2] == COMMAND_WORD_METADATA && expectedSize == METADATA_FRAME_SIZE) {
+    if (frame[69] != FRAME_END ||
+        frame[8] == 0 || frame[8] > 24 ||
+        frame[33] > 12 ||
+        frame[46] == 0 || frame[46] > 20) return false;
+    crcOffset = 67;
+    crcLength = 66;
+  } else {
+    return false;
+  }
+
+  const uint16_t receivedCrc = frame[crcOffset] | (uint16_t(frame[crcOffset + 1]) << 8);
+  return crc16(&frame[1], crcLength) == receivedCrc;
+}
+
 void handleFrame() {
-  if (frame[0] != FRAME_START || frame[10] != FRAME_END ||
-      frame[1] != VERSION || frame[2] != COMMAND_WORD) return;
-  const uint16_t receivedCrc = frame[8] | (uint16_t(frame[9]) << 8);
-  if (crc16(&frame[1], 7) != receivedCrc) return;
+  if (!validateFrame()) return;
 
   const uint8_t sequence = frame[3];
   const uint32_t arincWord = uint32_t(frame[4]) |
@@ -47,9 +72,40 @@ void handleFrame() {
     (uint32_t(frame[7]) << 24);
   (void) arincWord;
 
-  // TODO: decodificar conforme al instrumento y manejar salida tras diseño,
-  // revisión eléctrica y pruebas. No se accionan pines en este firmware base.
+  // Este firmware valida y confirma la trama; el firmware receptor con LCD
+  // presenta los metadatos de instrumento y valor.
   sendAck(sequence);  // ACK significa trama validada/recibida, no A/B transmitido.
+}
+
+void receiveByte(uint8_t incoming) {
+  if (used == 0) {
+    if (incoming != FRAME_START) return;
+    frame[used++] = incoming;
+    return;
+  }
+
+  if (used >= MAX_FRAME_SIZE) {
+    used = 0;
+    expectedSize = 0;
+    return;
+  }
+  frame[used++] = incoming;
+
+  if (used == 3) {
+    if (frame[2] == COMMAND_WORD) expectedSize = LEGACY_FRAME_SIZE;
+    else if (frame[2] == COMMAND_WORD_METADATA) expectedSize = METADATA_FRAME_SIZE;
+    else {
+      used = 0;
+      expectedSize = 0;
+      return;
+    }
+  }
+
+  if (expectedSize != 0 && used == expectedSize) {
+    handleFrame();
+    used = 0;
+    expectedSize = 0;
+  }
 }
 
 void setup() {
@@ -58,12 +114,6 @@ void setup() {
 
 void loop() {
   while (Serial.available() > 0) {
-    const uint8_t incoming = Serial.read();
-    if (used == 0 && incoming != FRAME_START) continue;
-    if (used < FRAME_SIZE) frame[used++] = incoming;
-    if (used == FRAME_SIZE) {
-      handleFrame();
-      used = 0;
-    }
+    receiveByte(static_cast<uint8_t>(Serial.read()));
   }
 }

@@ -2,6 +2,10 @@ const START = 0x02;
 const END = 0x03;
 const VERSION = 1;
 const COMMAND_WORD = 0x01;
+const COMMAND_WORD_METADATA = 0x02;
+const MAX_INSTRUMENT_LENGTH = 24;
+const MAX_UNIT_LENGTH = 12;
+const MAX_VALUE_LENGTH = 20;
 
 function crc16(buffer) {
   let crc = 0xffff;
@@ -14,7 +18,48 @@ function crc16(buffer) {
   return crc & 0xffff;
 }
 
-function makeFrame(word, sequence) {
+function normalizeDisplayText(value, field, maxLength, required = false) {
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    throw new Error(`El campo ${field} debe ser texto.`);
+  }
+  const text = String(value)
+    .replace(/[°º]/g, 'deg')
+    .replace(/[µμ]/g, 'u')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^\x20-\x7e]/g, '?');
+  if ((required && text.length === 0) || text.length > maxLength) {
+    throw new Error(`El campo ${field} debe tener entre ${required ? 1 : 0} y ${maxLength} caracteres ASCII.`);
+  }
+  return Buffer.from(text, 'ascii');
+}
+
+function makeFrame(word, sequence, metadata) {
+  if (metadata) {
+    const instrument = normalizeDisplayText(metadata.instrument, 'instrumento', MAX_INSTRUMENT_LENGTH, true);
+    const unit = normalizeDisplayText(metadata.unit ?? '', 'unidad', MAX_UNIT_LENGTH);
+    const value = normalizeDisplayText(metadata.value, 'valor', MAX_VALUE_LENGTH, true);
+    const content = Buffer.alloc(3 + 4 + 1 + MAX_INSTRUMENT_LENGTH + 1 + MAX_UNIT_LENGTH + 1 + MAX_VALUE_LENGTH);
+    content[0] = VERSION;
+    content[1] = COMMAND_WORD_METADATA;
+    content[2] = sequence & 0xff;
+    content.writeUInt32LE(word >>> 0, 3);
+    let offset = 7;
+    content[offset++] = instrument.length;
+    instrument.copy(content, offset);
+    offset += MAX_INSTRUMENT_LENGTH;
+    content[offset++] = unit.length;
+    unit.copy(content, offset);
+    offset += MAX_UNIT_LENGTH;
+    content[offset++] = value.length;
+    value.copy(content, offset);
+
+    const crc = crc16(content);
+    const checksum = Buffer.alloc(2);
+    checksum.writeUInt16LE(crc);
+    return Buffer.concat([Buffer.from([START]), content, checksum, Buffer.from([END])]);
+  }
+
   const content = Buffer.alloc(9);
   content[0] = VERSION;
   content[1] = COMMAND_WORD;
@@ -56,7 +101,7 @@ function createSerialService({ env = process.env, logger = console } = {}) {
     return SerialPort.list();
   }
 
-  async function sendWord(word, portPath) {
+  async function sendWord(word, portPath, metadata) {
     if (mode() === 'simulation') {
       return { mode: 'simulation', serialWritten: false, arduinoAcknowledged: false, physicalConfirmed: false };
     }
@@ -68,6 +113,8 @@ function createSerialService({ env = process.env, logger = console } = {}) {
       throw new Error(`El puerto ${portPath} no está disponible.`);
     }
 
+    const seq = sequence++ & 0xff;
+    const frame = makeFrame(word, seq, metadata);
     const { SerialPort } = require('serialport');
     const selectedPort = new SerialPort({
       path: portPath,
@@ -78,8 +125,6 @@ function createSerialService({ env = process.env, logger = console } = {}) {
       autoOpen: false
     });
     port = selectedPort;
-    const seq = sequence++ & 0xff;
-    const frame = makeFrame(word, seq);
     try {
       await new Promise((resolve, reject) => selectedPort.open((error) => error ? reject(error) : resolve()));
       const ack = new Promise((resolve, reject) => {

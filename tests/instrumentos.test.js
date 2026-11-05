@@ -65,6 +65,20 @@ function createPoolMock() {
         });
         return [{ insertId: id, affectedRows: 1 }];
       }
+      if (statement.startsWith('SELECT * FROM envios WHERE id_envio = ?')) {
+        const send = sends.get(Number(values[0]));
+        return [send ? [{ ...send }] : []];
+      }
+      if (statement.startsWith("UPDATE envios SET estado = 'procesado'")) {
+        const send = sends.get(Number(values[0]));
+        if (send) send.estado = 'procesado';
+        return [{ affectedRows: Number(Boolean(send)) }];
+      }
+      if (statement.startsWith("UPDATE envios SET estado = 'enviado'")) {
+        const send = sends.get(Number(values[0]));
+        if (send) send.estado = 'enviado';
+        return [{ affectedRows: Number(Boolean(send)) }];
+      }
       if (statement.includes('FROM envios e JOIN instrumentos i')) {
         const rows = [...sends.values()].map((send) => {
           const instrument = instruments.get(send.id_instrumento);
@@ -183,4 +197,53 @@ test('CRUD de instrumentos, validaciones y relación con envíos', async (t) => 
   assert.equal((await request(`/api/instrumentos/${id}`, { method: 'DELETE' })).status, 200);
   assert.equal((await request(`/api/instrumentos/${id}`)).status, 404);
   assert.equal((await request(`/api/instrumentos/${id}`, { method: 'DELETE' })).status, 404);
+});
+
+test('envía al Arduino el nombre, valor y unidad del envío', async (t) => {
+  const pool = createPoolMock();
+  pool.instruments.set(1, {
+    id_instrumento: 1,
+    nombre: 'Velocidad de prueba',
+    unidad: 'km/h'
+  });
+  pool.sends.set(1, {
+    id_envio: 1,
+    id_instrumento: 1,
+    valor: 12.5,
+    palabra_binaria: '10000000000000000000000000000001',
+    palabra_hexadecimal: '80000001',
+    estado: 'pendiente'
+  });
+  let transmitted;
+  const app = express();
+  app.use(express.json());
+  app.use('/api/envios', createEnviosRouter(pool, {
+    sendWord: async (...args) => {
+      transmitted = args;
+      return { mode: 'simulation' };
+    }
+  }));
+  app.use((error, req, res, next) => {
+    const status = Number.isInteger(error.status) ? error.status : 500;
+    res.status(status).json({ error: error.message });
+  });
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(() => new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/envios/1/ejecutar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ port: 'COM3' })
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(transmitted[0], 0x80000001);
+  assert.deepEqual(transmitted[2], {
+    instrument: 'Velocidad de prueba',
+    value: 12.5,
+    unit: 'km/h'
+  });
 });

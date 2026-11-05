@@ -75,6 +75,34 @@ test('crea una trama serial de 11 bytes con palabra little-endian y CRC correcto
   assert.equal(frame.readUInt16LE(8), crc16(frame.subarray(1, 8)));
 });
 
+test('incluye instrumento, valor y unidad en una trama serial extendida', () => {
+  const frame = makeFrame(0x12345678, 9, {
+    instrument: 'Velocidad aérea',
+    value: 123.5,
+    unit: 'km/h'
+  });
+  assert.equal(frame[0], 0x02);
+  assert.equal(frame[1], 0x01);
+  assert.equal(frame[2], 0x02);
+  assert.equal(frame.readUInt32LE(4), 0x12345678);
+  assert.equal(frame.length, 70);
+  assert.equal(frame[8], Buffer.byteLength('Velocidad aerea'));
+  assert.equal(frame.subarray(9, 9 + frame[8]).toString(), 'Velocidad aerea');
+  const unitLengthIndex = 33;
+  assert.equal(frame[unitLengthIndex], 4);
+  assert.equal(frame.subarray(unitLengthIndex + 1, unitLengthIndex + 5).toString(), 'km/h');
+  const valueLengthIndex = 46;
+  assert.equal(frame[valueLengthIndex], 5);
+  assert.equal(frame.subarray(valueLengthIndex + 1, valueLengthIndex + 6).toString(), '123.5');
+  assert.equal(frame.readUInt16LE(frame.length - 3), crc16(frame.subarray(1, frame.length - 3)));
+  assert.equal(frame.at(-1), 0x03);
+  assert.throws(() => makeFrame(1, 0, {
+    instrument: 'x'.repeat(25),
+    value: 1,
+    unit: ''
+  }), /instrumento/);
+});
+
 test('acepta ACK íntegro y rechaza ACK de otra secuencia', () => {
   const ack = Buffer.from([0x02, 1, 0x81, 5, 0, 0, 0x03]);
   ack.writeUInt16LE(crc16(ack.subarray(1, 4)), 4);
